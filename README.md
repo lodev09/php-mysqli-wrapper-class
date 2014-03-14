@@ -1,4 +1,4 @@
-PHP5 MySQL Helper Class
+PHP mysqli Wrapper Class
 ============================
 A very simple yet useful helper class for PHP used in accessing your MySQL database using PHP's native _**mysqli**_. Requires php 5 or higher.
 

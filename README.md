@@ -169,3 +169,10 @@ MySQL class reference. These are public methods, properties that you can access 
 * `MySQL::get_last_inserted_id()` returns the generated id for an AUTO_INCREMENT column or false.
 * `MySQL::query_succeeded()` returns `true` if query was successfull, otherwise `false`
 * `MySQL::affected_rows()` returns the number of rows affected from UPDATE or DELETE
+
+## Feedback
+
+All bugs, feature requests, pull requests, feedback, etc., are welcome. Visit my site at [www.lodev09.com](http://www.lodev09.com "www.lodev09.com").
+
+## License
+See [LICENSE](LICENSE) file.

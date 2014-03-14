@@ -35,21 +35,20 @@ if ($result) {
 	var_dump($result);
 }
 
-//insert record
+//Fields to insert
 $fields = array(
 	"name" => "~!@#%^&*()_+'"
 );
-
-$date = MySQL::get_mysql_datetime();
-
+//clean the array
 $fields = $sql->clean_sql_array($fields);
 
+//Fields to insert (object)
 $fields_obj = new stdClass;
 $fields_obj->city = "'%/\"";
-
+//clean the object
 $fields_obj = $sql->clean_sql_obj($fields_obj);
 
-var_dump($fields);
+$date = MySQL::get_mysql_datetime();
 
 $result = $sql->insert("insert into dt_sample(Name, City, Date) values('".$fields["name"]."', '".$fields_obj->city."', '".$date."')");
 var_dump($result);

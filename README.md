@@ -4,7 +4,7 @@ A very simple yet useful helper class for PHP used in accessing your MySQL datab
 
 ## Features
 * Object Oriented (OOP)
-* Built-in String Cleaner (`MySQL::clean_html_string` and `MySQL::clean_sql_string`)
+* Built-in escapes and cleaning `MySQL::escape`
 * Simplified data fetching
 * Extra validation methods
 * Or you can ask for more ... :)
@@ -52,10 +52,10 @@ Use `MySQL::query_row` to query only the first result set
     echo "First Record: ".($one_row ? $one_row->Name : "(None)");
 
 ### Filter
-Built-in filter string generator. `MySQL::get_filter_string(array filters[, array options = array(), boolean where = false])`. You can use `MySQL::get_num_rows()` to get the number of rows returned.
+Built-in filter string generator. `MySQL::build_filter_string(array filters[, array options = array(), boolean where = false])`. You can use `MySQL::get_num_rows()` to get the number of rows returned.
 
-    $filter = MySQL::get_filter_string(
-        array("Name"=>"LIKE 'B%'", "City"=>"= '".$sql->clean_sql_string("CityFilter'")."'"), 
+    $filter = MySQL::build_filter_string(
+        array("Name"=>"LIKE 'B%'", "City"=>"= '".$sql->escape("CityFilter'")."'"), 
         array("operator"=>"or"),
         true
     );
@@ -73,13 +73,13 @@ Built-in filter string generator. `MySQL::get_filter_string(array filters[, arra
         "name" => "~!@#%^&*()_+'"
     );
     //clean the array
-    $fields = $sql->clean_sql_array($fields);
+    $fields = $sql->escape($fields);
 
     //Fields to insert (object)
     $fields_obj = new stdClass;
     $fields_obj->city = "'%/\"";
     //clean the object
-    $fields_obj = $sql->clean_sql_obj($fields_obj);
+    $fields_obj = $sql->escape($fields_obj);
 
     $date = MySQL::get_mysql_datetime();
 
@@ -120,23 +120,15 @@ MySQL class reference. These are public methods, properties that you can access 
  - **$date**: The date string input to be formatted
  - **return**: formatted mysql date string
 
-* `MySQL::get_filter_string(array $filters[, mixed $options = false, boolean $where = false])` build a filter string to be used in a query.
+* `MySQL::build_filter_string(array $filters[, mixed $options = false, boolean $where = false])` build a filter string to be used in a query.
  - **$filters**: Filter array. _see sample code above_.
  - **$options**: Optional parameters. _see sample code above_.
  - **$where**: If `true`, start the filter with the **WHERE** clause otherwise start with **AND**.
  - **return**: formatted string.
 
-* `MySQL::clean_sql_array(array $array)` clean an sql array to be used in a query. Clean means _**escaping**_ special characters.
- - **$array**: the array input to be cleaned.
- - **return**: cleaned array.
-
-* `MySQL::clean_sql_obj(object $obj)` clean an sql array to be used in a query. Clean means _**escaping**_ special characters.
- - **$array**: the array input to be cleaned.
- - **return**: cleaned object.
-
-* `MySQL::clean_sql_string(string $str)` cleans a string to bused in a query.
- - **$str**: the string input.
- - **return**: cleaned `string`.
+* `MySQL::escape(mixed $var)` escape an sql array, string or object to be used in a query.
+ - **$var**: the input variant
+ - **return**: mixed.
 
 * `MySQL::get_error()` returns `mysqli_error()`
  - **return**: mysqli error string.

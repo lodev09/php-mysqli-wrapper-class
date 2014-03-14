@@ -162,7 +162,7 @@ class MySQL {
      * @param  boolean $where   true if we start from WHERE clause, otherwise AND
      * @return string           returns string filter
      */
-    public static function get_filter_string($filters, $options = false, $where = false) {
+    public static function build_filter_string($filters, $options = false, $where = false) {
         $filter_str = "";
         $operator = "and";
         $enclose = false;
@@ -187,8 +187,8 @@ class MySQL {
      * @param  array $array array input
      * @return array        return the clean array
      */
-    public function clean_sql_array($array) {
-        return array_map(array($this, "clean_sql_string"), $array);
+    private function real_escape_array($array) {
+        return array_map(array($this, "real_escape_string"), $array);
     }
 
     /**
@@ -196,8 +196,8 @@ class MySQL {
      * @param  object $array object input
      * @return object        return the clean object
      */
-    public function clean_sql_obj($obj) {
-        return (object)array_map(array($this, "clean_sql_string"), self::object_to_array($obj));
+    private function real_escape_obj($obj) {
+        return (object)array_map(array($this, "real_escape_string"), self::object_to_array($obj));
     }
 
     /**
@@ -205,8 +205,22 @@ class MySQL {
      * @param string $str  the string to be cleaned
      * @return string      return the clean string
      */
-    public function clean_sql_string($str) {
+    private function real_escape_string($str) {
         return mysqli_real_escape_string($this->linkId, $str);    
+    }
+
+    /**
+     * Escape a string, array or object
+     * @param  mixed $var [string, array or object]
+     * @return mixed      escaped string, array or object
+     */
+    public function escape($var) {
+        if (is_object($var))
+            return $this->real_escape_obj($var);
+        else if (is_array($var))
+            return $this->real_escape_array($var);
+        else
+            return $this->real_escape_string($var);
     }
 
     /**

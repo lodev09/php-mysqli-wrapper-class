@@ -23,8 +23,8 @@ echo "First Record: ".($one_row ? $one_row->Name : "(None)");
 echo "<br /><br />";
 
 //filter
-$filter = MySQL::get_filter_string(
-	array("Name"=>"LIKE 'B%'", "City"=>"= '".$sql->clean_sql_string("CityFilter'")."'"), 
+$filter = MySQL::build_filter_string(
+	array("Name"=>"LIKE 'B%'", "City"=>"= '".$sql->escape("CityFilter'")."'"), 
 	array("operator"=>"or"), //default is and
 	true //we start with WHERE clause, unless you want to append the fitler
 );
@@ -40,13 +40,13 @@ $fields = array(
 	"name" => "~!@#%^&*()_+'"
 );
 //clean the array
-$fields = $sql->clean_sql_array($fields);
+$fields = $sql->escape($fields);
 
 //Fields to insert (object)
 $fields_obj = new stdClass;
 $fields_obj->city = "'%/\"";
 //clean the object
-$fields_obj = $sql->clean_sql_obj($fields_obj);
+$fields_obj = $sql->escape($fields_obj);
 
 $date = MySQL::get_mysql_datetime();
 

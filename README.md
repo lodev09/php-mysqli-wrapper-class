@@ -172,7 +172,7 @@ MySQL class reference. These are public methods, properties that you can access 
 
 ## Feedback
 
-All bugs, feature requests, pull requests, feedback, etc., are welcome. Visit my site at [www.lodev09.com](http://www.lodev09.com "www.lodev09.com").
+All bugs, feature requests, pull requests, feedback, etc., are welcome. Visit my site at [www.lodev09.com](http://www.lodev09.com "www.lodev09.com") or email me at [lodev09@gmail.com](mailto:lodev09@gmail.com)
 
 ## License
 See [LICENSE](LICENSE) file.

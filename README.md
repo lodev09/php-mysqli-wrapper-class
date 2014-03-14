@@ -5,6 +5,9 @@ A very simple yet useful helper class for PHP used in accessing your MySQL datab
 ## Features
 * Object Oriented (OOP)
 * Built-in String Cleaner (`MySQL::clean_html_string` and `MySQL::clean_sql_string`)
+* Simplified data fetching
+* Extra validation methods
+* Or you can ask for more ... :)
 
 ## Install
     //require the main class file

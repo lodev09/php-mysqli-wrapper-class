@@ -32,7 +32,7 @@ $clean = true;
 //Get data by Object
 $obj_data = $sql->query("select * from dt_sample", MySQL::QUERY_OBJ, $clean);
 if ($obj_data) {
-	foreach ($obj_data as $data) {
+    foreach ($obj_data as $data) {
 		echo "[".$data->ID."] Name: ".$data->Name."<br />";
 	}
 }
@@ -116,42 +116,15 @@ MySQL class reference. These are public methods, properties that you can access 
 
 ### Methods
 
-* `MySQL::get_mysql_datetime(string $date)`
- - **$date**: The date string input to be formatted
- - **return**: formatted mysql date string
-
-* `MySQL::build_filter_string(array $filters[, mixed $options = false, boolean $where = false])` build a filter string to be used in a query.
- - **$filters**: Filter array. _see sample code above_.
- - **$options**: Optional parameters. _see sample code above_.
- - **$where**: If `true`, start the filter with the **WHERE** clause otherwise start with **AND**.
- - **return**: formatted string.
-
+* `MySQL::get_mysql_datetime(string $date)` - Get a MySQL formatted date. Defaults `now()`
+* `MySQL::build_filter_string(array $filters[, mixed $options = false, boolean $where = false])` - build a filter string to be used in a query.
 * `MySQL::escape(mixed $var)` escape an sql array, string or object to be used in a query.
- - **$var**: the input variant
- - **return**: mixed.
-
 * `MySQL::get_error()` returns `mysqli_error()`
- - **return**: mysqli error string.
-
 * `MySQL::query($sql [, $return_type = MySQL::QUERY_OBJ, $clean = true])` run an sql statement
- - **$sql**: the sql statement
- - **$return_type**: return type (default `MySQL::QUERY_OBJ`)
- - **$clean**: should it clean the output (useful for echoing HTML content)
- - **return**: mixed (_object_ or _array_)
-
-* `MySQL::query_row($sql [, $return_type = MySQL::QUERY_OBJ, $clean = true])` same as `query()` but returns `1` row
-
+* `MySQL::query_row($sql [, $return_type = MySQL::QUERY_OBJ, $clean = true])` same as `query()` but returns the first row
 * `MySQL::update($sql)` run an **UPDATE** statement
- - **$sql**: the sql statement
- - **return**: boolean `true` or `false`
-
 * `MySQL::delete($sql)` run a **DELETE** statement
- - **$sql**: the sql statement
- - **return**: boolean `true` or `false`
-
 * `MySQL::insert($sql)` run a **INSERT** statement
- - **$sql**: the sql statement
- - **return**: mixed `int` (last inserted id) or `false`
 
 #### Additional Methods
 * `MySQL::was_inserted()` returns `true` if inserted, otherwise `false`

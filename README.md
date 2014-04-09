@@ -10,9 +10,10 @@ A very simple yet useful helper class for PHP used in accessing your MySQL datab
 * Or you can ask for more ... :)
 
 ## Install
-    //require the main class file
-    require_once("lib/class.mysql.php");
-
+```php
+//require the main class file
+require_once("lib/class.mysql.php");
+```
 ## Init
 Initialize by creating a new instance of MySQL class
 ```php

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * MySQL Wrapper Class in PHP5
+ * @package MySQL Wrapper Class in PHP5
  * @author Jovanni Lo
  * @link http://www.lodev09.com
  * @see http://php.net/manual/en/book.mysql.php

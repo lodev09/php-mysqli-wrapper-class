@@ -15,90 +15,90 @@ A very simple yet useful helper class for PHP used in accessing your MySQL datab
 
 ## Init
 Initialize by creating a new instance of MySQL class
+```php
+$host = "localhost";
+$db = "test";
+$pwd = "mypass";
+$user = "root";
 
-    $host = "localhost";
-    $db = "test";
-    $pwd = "mypass";
-    $user = "root";
-
-    //create new instance of the class by passing your db credentials
-    $sql = new MySQL($host, $db, $user, $pwd);
-
+//create new instance of the class by passing your db credentials
+$sql = new MySQL($host, $db, $user, $pwd);
+```
 ## Query
 ### Select
+```php
+$clean = true;
 
-    $clean = true;
+//Get data by Object
+$obj_data = $sql->query("select * from dt_sample", MySQL::QUERY_OBJ, $clean);
+if ($obj_data) {
+	foreach ($obj_data as $data) {
+		echo "[".$data->ID."] Name: ".$data->Name."<br />";
+	}
+}
 
-    //Get data by Object
-    $obj_data = $sql->query("select * from dt_sample", MySQL::QUERY_OBJ, $clean);
-    if ($obj_data) {
-        foreach ($obj_data as $data) {
-            echo "[".$data->ID."] Name: ".$data->Name."<br />";
-        }
-    }
-
-    //Get data by Array
-    $assoc_data = $sql->query("select * from dt_sample", MySQL::QUERY_ASSOC, $clean);
-    if ($assoc_data) {
-        foreach ($assoc_data as $data) {
-            echo "[".$data["ID"]."] Name: ".$data["Name"]."<br />"; 
-        }
-    }
-
+//Get data by Array
+$assoc_data = $sql->query("select * from dt_sample", MySQL::QUERY_ASSOC, $clean);
+if ($assoc_data) {
+	foreach ($assoc_data as $data) {
+		echo "[".$data["ID"]."] Name: ".$data["Name"]."<br />"; 
+	}
+}
+```
 ### Query a row
 Use `MySQL::query_row` to query only the first result set
-
-    $one_row = $sql->query_row("select * from dt_sample order by Name asc");
-    echo "First Record: ".($one_row ? $one_row->Name : "(None)");
-
+```php
+$one_row = $sql->query_row("select * from dt_sample order by Name asc");
+echo "First Record: ".($one_row ? $one_row->Name : "(None)");
+```
 ### Filter
 Built-in filter string generator. `MySQL::build_filter_string(array filters[, array options = array(), boolean where = false])`. You can use `MySQL::get_num_rows()` to get the number of rows returned.
+```php
+$filter = MySQL::build_filter_string(
+	array("Name"=>"LIKE 'B%'", "City"=>"= '".$sql->escape("CityFilter'")."'"), 
+	array("operator"=>"or"),
+	true
+);
 
-    $filter = MySQL::build_filter_string(
-        array("Name"=>"LIKE 'B%'", "City"=>"= '".$sql->escape("CityFilter'")."'"), 
-        array("operator"=>"or"),
-        true
-    );
-
-    $result = $sql->query("select * from dt_sample ".$filter);
-    if ($result) {
-        echo "Found ".$sql->get_num_rows()." rows<br />";
-        var_dump($result);
-    }
-
+$result = $sql->query("select * from dt_sample ".$filter);
+if ($result) {
+	echo "Found ".$sql->get_num_rows()." rows<br />";
+	var_dump($result);
+}
+```
 ### Insert
+```php
+//Fields to insert
+$fields = array(
+	"name" => "~!@#%^&*()_+'"
+);
+//clean the array
+$fields = $sql->escape($fields);
 
-    //Fields to insert
-    $fields = array(
-        "name" => "~!@#%^&*()_+'"
-    );
-    //clean the array
-    $fields = $sql->escape($fields);
+//Fields to insert (object)
+$fields_obj = new stdClass;
+$fields_obj->city = "'%/\"";
+//clean the object
+$fields_obj = $sql->escape($fields_obj);
 
-    //Fields to insert (object)
-    $fields_obj = new stdClass;
-    $fields_obj->city = "'%/\"";
-    //clean the object
-    $fields_obj = $sql->escape($fields_obj);
+$date = MySQL::get_mysql_datetime();
 
-    $date = MySQL::get_mysql_datetime();
-
-    $result = $sql->insert("insert into dt_sample(Name, City, Date) values('".$fields["name"]."', '".$fields_obj->city."', '".$date."')");
-    var_dump($result);
-
+$result = $sql->insert("insert into dt_sample(Name, City, Date) values('".$fields["name"]."', '".$fields_obj->city."', '".$date."')");
+var_dump($result);
+```
 ### Update & Delete
 Update and Delete `em
+```php
+//update record
+$result = $sql->update("update dt_sample set City = 'NewCity' where Name='MyName'");
+var_dump($result);
+echo "UPDATE: Affected Rows: ".$sql->affected_rows()."<br />";
 
-    //update record
-    $result = $sql->update("update dt_sample set City = 'NewCity' where Name='MyName'");
-    var_dump($result);
-    echo "UPDATE: Affected Rows: ".$sql->affected_rows()."<br />";
-
-    //delete record
-    $result = $sql->delete("delete from dt_sample where Name = 'MyName'");
-    var_dump($result);
-    echo "DELETE: Affected Rows: ".$sql->affected_rows()."<br />";
-
+//delete record
+$result = $sql->delete("delete from dt_sample where Name = 'MyName'");
+var_dump($result);
+echo "DELETE: Affected Rows: ".$sql->affected_rows()."<br />";
+```
 ## Reference
 MySQL class reference. These are public methods, properties that you can access outside the class. See **code comments** for more information.
 

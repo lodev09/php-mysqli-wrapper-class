@@ -214,13 +214,15 @@ class MySQL {
      * @param  mixed $var [string, array or object]
      * @return mixed      escaped string, array or object
      */
-    public function escape($var) {
+    public function escape(&$var) {
         if (is_object($var))
-            return $this->real_escape_obj($var);
+            $var = $this->real_escape_obj($var);
         else if (is_array($var))
-            return $this->real_escape_array($var);
+            $var = $this->real_escape_array($var);
         else
-            return $this->real_escape_string($var);
+            $var = $this->real_escape_string($var);
+
+        return $var;
     }
 
     /**
@@ -274,6 +276,17 @@ class MySQL {
         // Parameters are empty.
         else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
+        }
+    }
+    /**
+     * Executes a general query command on the database
+     * @param  string $sql [description]
+     * @return [type]      [description]
+     */
+    public function query_other($sql = '') {
+        if (!empty($sql)) {
+            $this->run_query($sql);
+            return $this->query_succeeded();
         }
     }
     /**
@@ -350,11 +363,11 @@ class MySQL {
                 case 'INSERT':
                     $this->last_inserted_id = mysqli_insert_id($this->linkId);
                     break;
-                case 'DELETE':
-                case 'UPDATE':
+                case 'SELECT':
+                case 'CALL':
+                    $this->num_rows = $this->query_succeeded() ? mysqli_num_rows($this->query_result) : 0;
                     break;
                 default:
-                    $this->num_rows = $this->query_succeeded() ? mysqli_num_rows($this->query_result) : 0;
                     break;
             }
         }

@@ -162,13 +162,13 @@ class MySQL {
      * @param  boolean $where   true if we start from WHERE clause, otherwise AND
      * @return string           returns string filter
      */
-    public static function build_filter_string($filters, $options = false, $where = false) {
+    public static function build_filter_string($filters, $options = false, $append = "AND") {
         $filter_str = "";
-        $operator = "and";
+        $operator = "AND";
         $enclose = false;
         if ($options) {
             $options = (object)$options;
-            $operator = isset($options->operator) ? $options->operator : "and";
+            $operator = isset($options->operator) ? $options->operator : "AND";
             $enclose = isset($options->enclose) ? $options->enclose : false;
         }
         $arr_filters = array();
@@ -177,7 +177,8 @@ class MySQL {
         }
         if ($arr_filters) {
             $filter_str = implode(" $operator ", $arr_filters);
-            return ($where ? "where" : "and")." ".($enclose ? "(" : "").$filter_str.($enclose ? ")" : "");
+            $filters = $append." ".($enclose ? "(" : "").$filter_str.($enclose ? ")" : "");
+            return $filters;
         } else return "";
         
     }

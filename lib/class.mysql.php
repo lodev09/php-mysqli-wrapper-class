@@ -36,6 +36,10 @@ class MySQL {
     public $user = "root";
     public $pass = "";
     public $db = "";
+    public $debug = false;
+
+    // global clean - clean output for HTML display
+    public $clean = true;
 
     /**
      * Link ID of the current connection
@@ -48,6 +52,12 @@ class MySQL {
      * @var resource
      */
     private $query_result;
+
+    /**
+     * Current SQL Query statement
+     * @var string
+     */
+    private $query;
 
     /**
      * Type of query
@@ -241,7 +251,8 @@ class MySQL {
      * @param boolean $clean      true if you want to clean the values for HTML display
      * @return mixed              returns the result object/array data
      */
-    public function query($sql = '', $return_type = self::QUERY_OBJ, $clean = true) {
+    public function query($sql = '', $return_type = self::QUERY_OBJ, $clean = null) {
+        $clean = !is_null($clean) ? $clean : $this->clean;
         // Check to see that the parameters are not empty.
         if (!empty($sql)) {
 
@@ -262,7 +273,8 @@ class MySQL {
      * @param boolean $clean      true if you want to clean the values for HTML display
      * @return mixed              returns the result object/array data (object/array index 0)
      */
-    public function query_row($sql = '', $return_type = self::QUERY_OBJ, $clean = true) {
+    public function query_row($sql = '', $return_type = self::QUERY_OBJ, $clean = null) {
+        $clean = !is_null($clean) ? $clean : $this->clean;
         // Check to see that the parameters are not empty.
         if (!empty($sql)) {
 
@@ -351,12 +363,14 @@ class MySQL {
      * @return boolean         true for success, False if not.
      */
     private function run_query($query = null) {
+        $this->query = $query;
         // Check to see if the sql statement variable is set.
         if (!is_null($query)) {
             // Determine the query type. (SELECT, UPDATE, INSERT, DELETE etc.)
             $this->query_type = $this->get_query_type($query);
 
             if (!$this->query_result = mysqli_query($this->linkId, $query)) {
+                if ($this->debug) echo '[SQL-ERROR] '.$query;
                 trigger_error('[ERR] '.$this->get_error(), E_USER_ERROR);
             }
 
@@ -366,7 +380,7 @@ class MySQL {
                     break;
                 case 'SELECT':
                 case 'CALL':
-                    $this->num_rows = $this->query_succeeded() ? mysqli_num_rows($this->query_result) : 0;
+                    $this->num_rows = $this->query_succeeded() && !is_bool($this->query_result) ? mysqli_num_rows($this->query_result) : 0;
                     break;
                 default:
                     break;
@@ -380,6 +394,14 @@ class MySQL {
      */
     public function get_num_rows() {
         return $this->num_rows;
+    }
+
+    /**
+     * Return the last query statement
+     * @return string
+     */
+    public function get_query() {
+        return $this->query;
     }
 
     /**
@@ -479,7 +501,8 @@ class MySQL {
      * @param boolean $clean    true if the output should return a cleaned array 
      * @return mixed            an array of rows if succcessful, false if not.
      */
-    private function as_array($clean = true) {
+    private function as_array($clean = null) {
+        $clean = !is_null($clean) ? $clean : $this->clean;
         // If the last query ran was unsuccessfull, then return false.
         if (!$this->query_result) {
             return false;
@@ -504,7 +527,8 @@ class MySQL {
      * @param boolean       true if the output should return a cleaned object 
      * @return mixed        an array of object rows if succcessful, false if not.
      */
-    private function as_obj($clean = true) {
+    private function as_obj($clean = null) {
+        $clean = !is_null($clean) ? $clean : $this->clean;
         // If the last query ran was unsuccessfull, then return false.
         if (!$this->query_result) {
             return false;

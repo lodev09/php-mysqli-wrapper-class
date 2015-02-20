@@ -114,6 +114,7 @@ MySQL class reference. These are public methods, properties that you can access 
 * `public $user = "root"` - database username
 * `public $pass = ""` - database password
 * `public $db = ""` - database name
+* `public $debug = false` - turn debug on/off
 
 ### Methods
 

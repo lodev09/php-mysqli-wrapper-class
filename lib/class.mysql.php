@@ -76,6 +76,12 @@ class MySQL {
      * @var variant
      */
     private $num_rows;
+    
+    /**
+     * Types of each fields in the result set
+     * @var variant
+     */
+    private $types;
 
     /**
      * construct class
@@ -199,7 +205,11 @@ class MySQL {
      * @return array        return the clean array
      */
     private function real_escape_array($array) {
-        return array_map(array($this, "real_escape_string"), $array);
+        foreach ($array as $field => $value)
+            $array[$field] = $this->real_escape_string($value);
+            
+        return $array;
+        // return array_map(array($this, "real_escape_string"), $array);
     }
 
     /**
@@ -208,7 +218,11 @@ class MySQL {
      * @return object        return the clean object
      */
     private function real_escape_obj($obj) {
-        return (object)array_map(array($this, "real_escape_string"), self::object_to_array($obj));
+        foreach ($obj as $field => $value)
+            $obj->{$field} = $this->real_escape_string($value);
+            
+        return $obj;
+        // return (object)array_map(array($this, "real_escape_string"), self::object_to_array($obj));
     }
 
     /**
@@ -381,6 +395,7 @@ class MySQL {
                 case 'SELECT':
                 case 'CALL':
                     $this->num_rows = $this->query_succeeded() && !is_bool($this->query_result) ? mysqli_num_rows($this->query_result) : 0;
+                    $this->types = $this->get_types();
                     break;
                 default:
                     break;
@@ -428,6 +443,43 @@ class MySQL {
     private function get_query_type($query = '') {
         $query = explode(' ', $query);
         return strtoupper($query[0]);
+    }
+    
+    private function get_types() {
+        if (!$this->query_result) return false;
+        $types = array();
+        if ($fields = mysqli_fetch_fields($this->query_result)) {
+            foreach ($fields as $field) {
+                $types[$field->name] = $field->type;
+            }
+        }
+        
+        return $types;
+    }
+    
+    private function set_type($field, &$value) {
+        $mysqli_type = isset($this->types[$field]) ? $this->types[$field] : null;
+        switch($mysqli_type) {
+            case MYSQLI_TYPE_NULL:
+                $type_name = 'null';
+                break;
+            case MYSQLI_TYPE_TINY:
+            case MYSQLI_TYPE_SHORT:
+            case MYSQLI_TYPE_LONG:
+            case MYSQLI_TYPE_INT24:
+            case MYSQLI_TYPE_LONGLONG:
+                $type_name = 'int';
+                break;
+            case MYSQLI_TYPE_FLOAT:
+            case MYSQLI_TYPE_DOUBLE:
+                $type_name = 'float';
+                break;
+            default:
+                $type_name = 'string';
+                break;
+        }
+        
+        settype($value, $type_name);
     }
 
     /**
@@ -510,9 +562,8 @@ class MySQL {
             if (!$this->affected_rows() == 0) {
                 $rows = array();
 
-                while ($row = mysqli_fetch_assoc($this->query_result)) {
-                    array_push($rows, $clean ? $this->clean_html_string_array($row) : $row);
-                }
+                while ($row = mysqli_fetch_assoc($this->query_result))
+                    array_push($rows, $this->process_row_array($row, $clean));
 
                 $this->free_result();
                 return $rows;
@@ -536,9 +587,8 @@ class MySQL {
             if (!$this->affected_rows() == 0) {
                 $rows = array();
 
-                while ($row = mysqli_fetch_object($this->query_result)) {
-                    array_push($rows, $clean ? $this->clean_html_string_obj($row) : $row);
-                }
+                while ($row = mysqli_fetch_object($this->query_result))
+                    array_push($rows, $this->process_row_obj($row, $clean));
 
                 $this->free_result();
                 return $rows;
@@ -547,14 +597,19 @@ class MySQL {
             }
         }
     }
-
+    
     /**
      * Cleans the array for HTML display
      * @param  array $array     array input
      * @return array            returns a clean array
      */
-    private function clean_html_string_array($array) {
-        return array_map(array($this, "clean_html_string"), $array);
+    private function process_row_array($array) {
+        foreach ($array as $field => $value) {
+            $this->set_type($field, $value);
+            $array[$field] = $clean ? clean_html_string($value) : $value;
+        }
+        
+        return $array;
     }
 
     /**
@@ -562,8 +617,13 @@ class MySQL {
      * @param  STDClass $obj STDClass object
      * @return STDClass      returns a clean STDClass object
      */
-    private function clean_html_string_obj($obj) {
-        return (object)array_map(array($this, "clean_html_string"), self::object_to_array($obj));
+    private function process_row_obj($obj, $clean = true) {
+        foreach ($obj as $field => $value) {
+            $this->set_type($field, $value);
+            $obj->{$field} = $clean ? self::clean_html_string($value) : $value;
+        }
+        
+        return $obj;
     }
 
     /**
@@ -583,13 +643,15 @@ class MySQL {
 
     /**
      * Clean's the string
-     * @param  string $str_value string input
+     * @param  string $value string input
      * @return string            returns the cleaned string for HTML display
      */
-    private function clean_html_string($str_value) {
-        if (is_null($str_value)) $str_value = "";
-        $new_str = is_string($str_value) ? htmlentities(html_entity_decode($str_value, ENT_QUOTES)) : $str_value;
-        return nl2br(utf8_encode($new_str));
+    private function clean_html_string($value) {
+        if (is_null($value)) return $value;
+        if (!is_string($value)) return $value;
+
+        $new_value = htmlentities(html_entity_decode($value, ENT_QUOTES));
+        return nl2br(utf8_encode($new_value));
     }
 }
 

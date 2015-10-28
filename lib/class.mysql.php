@@ -432,6 +432,13 @@ class MySQL {
      * @return returns True on success or False on failure.
      */
     private function free_result() {
+        while (mysqli_more_results($this->linkId) && mysqli_next_result($this->linkId)) {
+            $dummyResult = mysqli_use_result($this->linkId);
+            if ($dummyResult instanceof mysqli_result) {
+                mysqli_free_result($this->linkId);
+            }
+        }
+
         return mysqli_free_result($this->query_result);
     }
 

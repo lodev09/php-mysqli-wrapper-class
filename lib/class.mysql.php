@@ -5,20 +5,20 @@
  * @author Jovanni Lo
  * @link http://www.lodev09.com
  * @see http://php.net/manual/en/book.mysql.php
- * @license 
+ * @license
  * The MIT License (MIT)
  * Copyright (c) 2014 Jovanni Lo
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -48,7 +48,7 @@ class MySQL {
     private $linkId = null;
 
     /**
-     * Result of mysqli_query() 
+     * Result of mysqli_query()
      * @var resource
      */
     private $query_result;
@@ -76,7 +76,7 @@ class MySQL {
      * @var variant
      */
     private $num_rows;
-    
+
     /**
      * Types of each fields in the result set
      * @var variant
@@ -90,11 +90,11 @@ class MySQL {
      * @param string $username user
      * @param string $password password
      */
-    public function __construct($host = 'localhost', $database = '', $username = '', $password = '') {
+    public function __construct($host = 'localhost', $database = '', $username = '', $password = '', $port = 3306) {
         if (empty($database) && empty($username) && empty($password)) {
             trigger_error('Invalid parameter values to establish connection.', E_USER_ERROR);
         } else {
-            if (!$this->connect($host, $database, $username, $password)) {
+            if (!$this->connect($host, $database, $username, $password, $port)) {
                 trigger_error('Could not establish a connection.', E_USER_ERROR);
             }
         }
@@ -119,13 +119,13 @@ class MySQL {
      * @param  string $password the password of the db to connect to
      * @return boolean          returns true if successfully connected
      */
-    private function connect($host, $database, $username, $password) {
+    private function connect($host, $database, $username, $password, $port = 3306) {
         $this->host = $host;
         $this->db = $database;
         $this->user = $username;
         $this->pass = $password;
         if (is_null($this->linkId)) {
-            $this->linkId = mysqli_connect($host, $username, $password) or trigger_error('Could not establish a connection.',
+            $this->linkId = mysqli_connect($host, $username, $password, $database, $port) or trigger_error('Could not establish a connection.',
                 E_USER_ERROR);
 
             // If we couldn't select the database, return false.
@@ -196,7 +196,7 @@ class MySQL {
             $filters = $append." ".($enclose ? "(" : "").$filter_str.($enclose ? ")" : "");
             return $filters;
         } else return "";
-        
+
     }
 
     /**
@@ -207,7 +207,7 @@ class MySQL {
     private function real_escape_array($array) {
         foreach ($array as $field => $value)
             $array[$field] = $this->real_escape_string($value);
-            
+
         return $array;
         // return array_map(array($this, "real_escape_string"), $array);
     }
@@ -220,7 +220,7 @@ class MySQL {
     private function real_escape_obj($obj) {
         foreach ($obj as $field => $value)
             $obj->{$field} = $this->real_escape_string($value);
-            
+
         return $obj;
         // return (object)array_map(array($this, "real_escape_string"), self::object_to_array($obj));
     }
@@ -231,7 +231,7 @@ class MySQL {
      * @return string      return the clean string
      */
     private function real_escape_string($str) {
-        return mysqli_real_escape_string($this->linkId, $str);    
+        return mysqli_real_escape_string($this->linkId, $str);
     }
 
     /**
@@ -252,7 +252,7 @@ class MySQL {
 
     /**
      * Retrieves the last error.
-     * @return string the error text from the last MySQL function, or empty string if no error occurred. 
+     * @return string the error text from the last MySQL function, or empty string if no error occurred.
      */
     public function get_error() {
         return mysqli_error($this->linkId);
@@ -272,8 +272,11 @@ class MySQL {
 
             // Execute the query.
             $this->run_query($sql);
-            if ($return_type == self::QUERY_ASSOC) return $this->as_array($clean);
-            elseif ($return_type == self::QUERY_OBJ) return $this->as_obj($clean);
+            if ($return_type == self::QUERY_ASSOC) $rows = $this->as_array($clean);
+            elseif ($return_type == self::QUERY_OBJ) $rows = $this->as_obj($clean);
+
+            if (!$rows) return false;
+            else return $rows;
         }
         // Parameters are empty.
         else {
@@ -298,7 +301,7 @@ class MySQL {
             elseif ($return_type == self::QUERY_OBJ) $row = $this->as_obj($clean);
 
             if (!$row) return false;
-            else  return $row[0];
+            else return $row[0];
         }
         // Parameters are empty.
         else {
@@ -451,7 +454,7 @@ class MySQL {
         $query = explode(' ', $query);
         return strtoupper($query[0]);
     }
-    
+
     private function get_types() {
         if (!$this->query_result) return false;
         $types = array();
@@ -460,10 +463,10 @@ class MySQL {
                 $types[$field->name] = $field->type;
             }
         }
-        
+
         return $types;
     }
-    
+
     private function set_type($field, &$value) {
         $mysqli_type = isset($this->types[$field]) ? $this->types[$field] : null;
         switch($mysqli_type) {
@@ -485,7 +488,7 @@ class MySQL {
                 $type_name = 'string';
                 break;
         }
-        
+
         settype($value, $type_name);
     }
 
@@ -557,14 +560,14 @@ class MySQL {
 
     /**
      * Return the result as an array.
-     * @param boolean $clean    true if the output should return a cleaned array 
+     * @param boolean $clean    true if the output should return a cleaned array
      * @return mixed            an array of rows if succcessful, false if not.
      */
     private function as_array($clean = null) {
         $clean = !is_null($clean) ? $clean : $this->clean;
         // If the last query ran was unsuccessfull, then return false.
         if (!$this->query_result) {
-            return false;
+            $result = false;
         } else {
             if (!$this->affected_rows() == 0) {
                 $rows = array();
@@ -572,24 +575,27 @@ class MySQL {
                 while ($row = mysqli_fetch_assoc($this->query_result))
                     array_push($rows, $this->process_row_array($row, $clean));
 
-                $this->free_result();
-                return $rows;
+                $result = $rows;
             } else {
-                return false;
+                $result = false;
             }
         }
+
+        $this->free_result();
+
+        return $result;
     }
 
     /**
      * Return the result as an object.
-     * @param boolean       true if the output should return a cleaned object 
+     * @param boolean       true if the output should return a cleaned object
      * @return mixed        an array of object rows if succcessful, false if not.
      */
     private function as_obj($clean = null) {
         $clean = !is_null($clean) ? $clean : $this->clean;
         // If the last query ran was unsuccessfull, then return false.
         if (!$this->query_result) {
-            return false;
+            $result = false;
         } else {
             if (!$this->affected_rows() == 0) {
                 $rows = array();
@@ -597,14 +603,17 @@ class MySQL {
                 while ($row = mysqli_fetch_object($this->query_result))
                     array_push($rows, $this->process_row_obj($row, $clean));
 
-                $this->free_result();
-                return $rows;
+                $result = $rows;
             } else {
-                return false;
+                $result = false;
             }
         }
+
+        $this->free_result();
+
+        return $result;
     }
-    
+
     /**
      * Cleans the array for HTML display
      * @param  array $array     array input
@@ -615,7 +624,7 @@ class MySQL {
             $this->set_type($field, $value);
             $array[$field] = $clean ? clean_html_string($value) : $value;
         }
-        
+
         return $array;
     }
 
@@ -629,7 +638,7 @@ class MySQL {
             $this->set_type($field, $value);
             $obj->{$field} = $clean ? self::clean_html_string($value) : $value;
         }
-        
+
         return $obj;
     }
 
@@ -641,10 +650,10 @@ class MySQL {
     private static function object_to_array($object) {
         if (!is_object($object) && !is_array($object))
             return $object;
-        
+
         if (is_object($object))
             $object = get_object_vars($object);
-            
+
         return array_map(array(__CLASS__, 'object_to_array'), $object);
     }
 

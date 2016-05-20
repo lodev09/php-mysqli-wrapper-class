@@ -272,8 +272,7 @@ class MySQL {
 
             // Execute the query.
             $this->run_query($sql);
-            if ($return_type == self::QUERY_ASSOC) $rows = $this->as_array($clean);
-            elseif ($return_type == self::QUERY_OBJ) $rows = $this->as_obj($clean);
+            $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
 
             if (!$rows) return false;
             else return $rows;
@@ -297,8 +296,7 @@ class MySQL {
 
             // Execute the query.
             $this->run_query($sql);
-            if ($return_type == self::QUERY_ASSOC) $row = $this->as_array($clean);
-            elseif ($return_type == self::QUERY_OBJ) $row = $this->as_obj($clean);
+            $row = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
 
             if (!$row) return false;
             else return $row[0];
@@ -619,7 +617,7 @@ class MySQL {
      * @param  array $array     array input
      * @return array            returns a clean array
      */
-    private function process_row_array($array) {
+    private function process_row_array($array, $clean = true) {
         foreach ($array as $field => $value) {
             $this->set_type($field, $value);
             $array[$field] = $clean ? clean_html_string($value) : $value;

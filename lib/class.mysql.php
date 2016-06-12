@@ -480,6 +480,7 @@ class MySQL {
                 break;
             case MYSQLI_TYPE_FLOAT:
             case MYSQLI_TYPE_DOUBLE:
+            case MYSQLI_TYPE_NEWDECIMAL:
                 $type_name = 'float';
                 break;
             default:
@@ -620,7 +621,7 @@ class MySQL {
     private function process_row_array($array, $clean = true) {
         foreach ($array as $field => $value) {
             $this->set_type($field, $value);
-            $array[$field] = $clean ? clean_html_string($value) : $value;
+            $array[$field] = $clean ? self::clean_html_string($value) : $value;
         }
 
         return $array;

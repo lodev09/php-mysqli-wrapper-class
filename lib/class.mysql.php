@@ -7,7 +7,7 @@
  * @see http://php.net/manual/en/book.mysql.php
  * @license
  * The MIT License (MIT)
- * Copyright (c) 2014 Jovanni Lo
+ * Copyright (c) 2016 Jovanni Lo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -91,6 +91,8 @@ class MySQL {
      * @param string $password password
      */
     public function __construct($host = 'localhost', $database = '', $username = '', $password = '', $port = 3306) {
+        register_shutdown_function(array($this, '__destruct'));
+
         if (empty($database) && empty($username) && empty($password)) {
             trigger_error('Invalid parameter values to establish connection.', E_USER_ERROR);
         } else {
@@ -107,6 +109,7 @@ class MySQL {
     public function __destruct() {
         if ($this->linkId) {
             mysqli_close($this->linkId);
+            $this->linkId = null;
         }
         unset($this);
     }
@@ -162,12 +165,12 @@ class MySQL {
      * @param  string $date string date
      * @return string       returns the formatted datetime
      */
-    public static function get_mysql_datetime($date="") {
+    public static function get_date($date="", $time = true) {
         if ($date == "")
-            return date( 'Y-m-d H:i:s');
+            return date('Y-m-d'.($time ? ' H:i:s' : ''));
         else {
             $stamp = strtotime($date);
-            return date( 'Y-m-d H:i:s', $stamp );
+            return date('Y-m-d'.($time ? ' H:i:s' : ''), $stamp );
         }
     }
 
@@ -178,7 +181,7 @@ class MySQL {
      * @param  boolean $where   true if we start from WHERE clause, otherwise AND
      * @return string           returns string filter
      */
-    public static function build_filter_string($filters, $options = false, $append = "AND") {
+    public static function build_filter_string($input, $options = false, $append = "AND") {
         $filter_str = "";
         $operator = "AND";
         $enclose = false;
@@ -187,12 +190,18 @@ class MySQL {
             $operator = isset($options->operator) ? $options->operator : "AND";
             $enclose = isset($options->enclose) ? $options->enclose : false;
         }
-        $arr_filters = array();
-        foreach ($filters as $field => $filter) {
-            $arr_filters[] = "$field $filter";
+
+        $filter_list = array();
+        if ($input) {
+            $filters = is_array($input) ? $input : array($input);
+            foreach ($filters as $field => $filter) {
+                if (is_int($field)) $filter_list[] = $filter;
+                else $filter_list[] = "$field $filter";
+            }
         }
-        if ($arr_filters) {
-            $filter_str = implode(" $operator ", $arr_filters);
+
+        if ($filter_list) {
+            $filter_str = implode(" $operator ", $filter_list);
             $filters = $append." ".($enclose ? "(" : "").$filter_str.($enclose ? ")" : "");
             return $filters;
         } else return "";
@@ -259,6 +268,34 @@ class MySQL {
     }
 
     /**
+     * Executes a command on the database and accepts a callback for each row
+     * @param  string $sql         the query to run
+     * @param  closure $callback    the callback function
+     * @param  mixed $return_type return type of the query
+     * @param  boolean $clean       true if you want to clean the values for HTML display
+     * @return mixed              returns the result object/array data
+     */
+    public function each($sql = '', $callback, $return_type = self::QUERY_OBJ, $clean = null) {
+        $clean = !is_null($clean) ? $clean : $this->clean;
+        // Check to see that the parameters are not empty.
+        if (!empty($sql)) {
+
+            // Execute the query.
+            $this->run_query($sql);
+            if (is_bool($this->query_result)) return $this->query_result;
+
+            $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean, $callback) : $this->as_array($clean, $callback);
+
+            if (!$rows) return false;
+            else return $rows;
+        }
+        // Parameters are empty.
+        else {
+            trigger_error('You need to provide a query.', E_USER_ERROR);
+        }
+    }
+
+    /**
      * Executes a command on the database.
      * @param string $sql         the query to run.
      * @param mixed $return_type  return type of the query
@@ -272,6 +309,8 @@ class MySQL {
 
             // Execute the query.
             $this->run_query($sql);
+            if (is_bool($this->query_result)) return $this->query_result;
+
             $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
 
             if (!$rows) return false;
@@ -353,6 +392,36 @@ class MySQL {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
+
+    /**
+     * Builds an insert statement and call insert()
+     * @param  string $table table
+     * @param  array $data  data
+     * @return boolean        result
+     */
+    public function insert_data($table, $data) {
+        if (!$data) return false;
+
+        $fields = array();
+        $values = array();
+        foreach ($data as $field => $value) {
+            $fields[] = $field;
+
+            $this->escape($value);
+
+            if (is_string($value)) {
+                $values[] = "'$value'";
+            } else if (is_null($value)) {
+                $values[] = "null";
+            } else {
+                $values[] = $value;
+            }
+        }
+
+        $insert_query = "INSERT INTO $table (".(implode(", ", $fields)).") VALUES(".implode(", ", $values).")";
+        return $this->insert($insert_query);
+    }
+
     /**
      * Executes an insert command on the database
      * @param string $sql   the query to run.
@@ -396,7 +465,9 @@ class MySQL {
                 case 'SELECT':
                 case 'CALL':
                     $this->num_rows = $this->query_succeeded() && !is_bool($this->query_result) ? mysqli_num_rows($this->query_result) : 0;
-                    $this->types = $this->get_types();
+                    if (!is_bool($this->query_result))
+                        $this->types = $this->get_types();
+
                     break;
                 default:
                     break;
@@ -466,6 +537,8 @@ class MySQL {
     }
 
     private function set_type($field, &$value) {
+        if (is_null($value)) return;
+
         $mysqli_type = isset($this->types[$field]) ? $this->types[$field] : null;
         switch($mysqli_type) {
             case MYSQLI_TYPE_NULL:
@@ -562,7 +635,7 @@ class MySQL {
      * @param boolean $clean    true if the output should return a cleaned array
      * @return mixed            an array of rows if succcessful, false if not.
      */
-    private function as_array($clean = null) {
+    private function as_array($clean = null, $callback = null) {
         $clean = !is_null($clean) ? $clean : $this->clean;
         // If the last query ran was unsuccessfull, then return false.
         if (!$this->query_result) {
@@ -572,7 +645,7 @@ class MySQL {
                 $rows = array();
 
                 while ($row = mysqli_fetch_assoc($this->query_result))
-                    array_push($rows, $this->process_row_array($row, $clean));
+                    array_push($rows, $this->process_row_array($row, $clean, $callback));
 
                 $result = $rows;
             } else {
@@ -590,7 +663,7 @@ class MySQL {
      * @param boolean       true if the output should return a cleaned object
      * @return mixed        an array of object rows if succcessful, false if not.
      */
-    private function as_obj($clean = null) {
+    private function as_obj($clean = null, $callback = null) {
         $clean = !is_null($clean) ? $clean : $this->clean;
         // If the last query ran was unsuccessfull, then return false.
         if (!$this->query_result) {
@@ -600,7 +673,7 @@ class MySQL {
                 $rows = array();
 
                 while ($row = mysqli_fetch_object($this->query_result))
-                    array_push($rows, $this->process_row_obj($row, $clean));
+                    array_push($rows, $this->process_row_obj($row, $clean, $callback));
 
                 $result = $rows;
             } else {
@@ -615,30 +688,44 @@ class MySQL {
 
     /**
      * Cleans the array for HTML display
-     * @param  array $array     array input
+     * @param  array $row     array input
      * @return array            returns a clean array
      */
-    private function process_row_array($array, $clean = true) {
-        foreach ($array as $field => $value) {
+    private function process_row_array($row, $clean = true, $callback = null) {
+        foreach ($row as $field => $value) {
             $this->set_type($field, $value);
-            $array[$field] = $clean ? self::clean_html_string($value) : $value;
+            $new_value = $clean ? self::clean_html_string($value) : $value;
+
+            if ($callback) {
+                $result = $callback($new_value, $row, $clean);
+                if ($result) $new_value = $result;
+            }
+
+            $row[$field] = $new_value;
         }
 
-        return $array;
+        return $row;
     }
 
     /**
      * Cleans the object for HTML display
-     * @param  STDClass $obj STDClass object
+     * @param  STDClass $row STDClass object
      * @return STDClass      returns a clean STDClass object
      */
-    private function process_row_obj($obj, $clean = true) {
-        foreach ($obj as $field => $value) {
+    private function process_row_obj($row, $clean = true, $callback = null) {
+        foreach ($row as $field => $value) {
             $this->set_type($field, $value);
-            $obj->{$field} = $clean ? self::clean_html_string($value) : $value;
+            $new_value = $clean ? self::clean_html_string($value) : $value;
+
+            if ($callback) {
+                $result = $callback($new_value, $row, $clean);
+                if ($result) $new_value = $result;
+            }
+
+            $row->{$field} = $new_value;
         }
 
-        return $obj;
+        return $row;
     }
 
     /**
@@ -666,7 +753,7 @@ class MySQL {
         if (!is_string($value)) return $value;
 
         $new_value = htmlentities(html_entity_decode($value, ENT_QUOTES));
-        return nl2br(utf8_encode($new_value));
+        return utf8_encode($new_value);
     }
 }
 

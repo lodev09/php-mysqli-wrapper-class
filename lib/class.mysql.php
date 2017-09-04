@@ -111,7 +111,6 @@ class MySQL {
             mysqli_close($this->linkId);
             $this->linkId = null;
         }
-        unset($this);
     }
 
     /**
@@ -407,18 +406,15 @@ class MySQL {
         foreach ($data as $field => $value) {
             $fields[] = $field;
 
-            $this->escape($value);
-
-            if (is_string($value)) {
-                $values[] = "'$value'";
-            } else if (is_null($value)) {
-                $values[] = "null";
+            if (is_null($value)) {
+                $values[] = "NULL";
             } else {
-                $values[] = $value;
+                $this->escape($value);
+                $values[] = "'$value'";
             }
         }
 
-        $insert_query = "INSERT INTO $table (".(implode(", ", $fields)).") VALUES(".implode(", ", $values).")";
+        $insert_query = "INSERT INTO $table (".(implode(", ", $fields)).") VALUES(".implode(", ", $values).");";
         return $this->insert($insert_query);
     }
 

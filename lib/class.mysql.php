@@ -284,12 +284,48 @@ class MySQL {
             if (is_bool($this->query_result)) return $this->query_result;
 
             $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean, $callback) : $this->as_array($clean, $callback);
+            $this->free_result();
 
             if (!$rows) return false;
             else return $rows;
+        } else {
+            trigger_error('You need to provide a query.', E_USER_ERROR);
         }
-        // Parameters are empty.
-        else {
+    }
+
+    /**
+     * Executes a command on the database (multi query)
+     * @param string $sql         the query to run.
+     * @param mixed $return_type  return type of the query
+     * @param boolean $clean      true if you want to clean the values for HTML display
+     * @return mixed              returns the result object/array data
+     */
+    public function query_multi($sql = '', $return_type = self::QUERY_OBJ, $clean = null) {
+        $clean = !is_null($clean) ? $clean : $this->clean;
+        // Check to see that the parameters are not empty.
+        if (!empty($sql)) {
+
+            // Execute the query.
+            $this->run_query($sql);
+            if (is_bool($this->query_result)) return $this->query_result;
+
+            $results = array();
+            $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
+            $this->free_result(false);
+
+            if ($rows) $results[] = $rows;
+
+            while (mysqli_more_results($this->linkId) && mysqli_next_result($this->linkId)) {
+                if ($this->query_result = mysqli_store_result($this->linkId)) {
+                    $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
+                    $this->free_result(false);
+
+                    if ($rows) $results[] = $rows;
+                }
+            }
+
+            return $results;
+        } else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
@@ -311,12 +347,11 @@ class MySQL {
             if (is_bool($this->query_result)) return $this->query_result;
 
             $rows = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
+            $this->free_result();
 
             if (!$rows) return false;
             else return $rows;
-        }
-        // Parameters are empty.
-        else {
+        } else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
@@ -335,12 +370,11 @@ class MySQL {
             // Execute the query.
             $this->run_query($sql);
             $row = $return_type == self::QUERY_OBJ ? $this->as_obj($clean) : $this->as_array($clean);
+            $this->free_result();
 
             if (!$row) return false;
             else return $row[0];
-        }
-        // Parameters are empty.
-        else {
+        } else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
@@ -367,9 +401,7 @@ class MySQL {
             // Execute the query.
             $this->run_query($sql);
             return $this->was_updated();
-        }
-        // Parameters are empty.
-        else {
+        } else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
@@ -385,9 +417,7 @@ class MySQL {
             // Execute the query.
             $this->run_query($sql);
             return $this->was_deleted();
-        }
-        // Parameters are empty.
-        else {
+        } else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
@@ -430,9 +460,7 @@ class MySQL {
             // Execute the query.
             $this->run_query($sql);
             return $this->was_inserted();
-        }
-        // Parameters are empty.
-        else {
+        } else {
             trigger_error('You need to provide a query.', E_USER_ERROR);
         }
     }
@@ -448,8 +476,9 @@ class MySQL {
         if (!is_null($query)) {
             // Determine the query type. (SELECT, UPDATE, INSERT, DELETE etc.)
             $this->query_type = $this->get_query_type($query);
+            $this->query_result = mysqli_query($this->linkId, $query);
 
-            if (!$this->query_result = mysqli_query($this->linkId, $query)) {
+            if (!$this->query_result) {
                 if ($this->debug) echo '[SQL-ERROR] '.$query;
                 trigger_error('[ERR] '.$this->get_error(), E_USER_ERROR);
             }
@@ -499,15 +528,19 @@ class MySQL {
      * Free result memory.
      * @return returns True on success or False on failure.
      */
-    private function free_result() {
-        while (mysqli_more_results($this->linkId) && mysqli_next_result($this->linkId)) {
-            $dummyResult = mysqli_use_result($this->linkId);
-            if ($dummyResult instanceof mysqli_result) {
-                mysqli_free_result($this->linkId);
+    private function free_result($single_query = true) {
+        mysqli_free_result($this->query_result);
+
+        // if single query, free other result to avoid "command out of sync" error
+        if ($single_query) {
+            while (mysqli_more_results($this->linkId) && mysqli_next_result($this->linkId)) {
+                if ($dummyResult = mysqli_store_result($this->linkId)) {
+                    mysqli_free_result($dummyResult);
+                }
             }
         }
 
-        return mysqli_free_result($this->query_result);
+        return true;
     }
 
     /**
@@ -649,8 +682,6 @@ class MySQL {
             }
         }
 
-        $this->free_result();
-
         return $result;
     }
 
@@ -676,8 +707,6 @@ class MySQL {
                 $result = false;
             }
         }
-
-        $this->free_result();
 
         return $result;
     }

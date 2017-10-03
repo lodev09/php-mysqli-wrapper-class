@@ -7,7 +7,7 @@
  * @see http://php.net/manual/en/book.mysql.php
  * @license
  * The MIT License (MIT)
- * Copyright (c) 2016 Jovanni Lo
+ * Copyright (c) 2017 Jovanni Lo
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -386,6 +386,7 @@ class MySQL {
     public function query_other($sql = '') {
         if (!empty($sql)) {
             $this->run_query($sql);
+            $this->free_result();
             return $this->query_succeeded();
         }
     }

@@ -537,7 +537,7 @@ class MySQL {
      * @return returns True on success or False on failure.
      */
     private function free_result($single_query = true) {
-        if ($this->query_result) mysqli_free_result($this->query_result);
+        if (is_resource($this->query_result)) mysqli_free_result($this->query_result);
 
         // if single query, free other result to avoid "command out of sync" error
         if ($single_query) {

@@ -146,6 +146,13 @@ class MySQL {
     }
 
     /**
+     * Sets the encoding charset (defaults to utf8)
+     */
+    public function set_charset($charset = 'utf8') {
+        return mysqli_set_charset($this->linkId, $charset);
+    }
+
+    /**
      * Selects the database
      * @param  string $database the database to connect to
      * @return boolean           true for success, false if not

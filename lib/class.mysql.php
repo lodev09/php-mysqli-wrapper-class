@@ -557,7 +557,7 @@ class MySQL {
      * @return string           the first word in the query.
      */
     private function get_query_type($query = '') {
-        $query = explode(' ', $query);
+        $query = explode(' ', trim($query));
         return strtoupper($query[0]);
     }
 

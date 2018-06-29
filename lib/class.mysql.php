@@ -146,6 +146,13 @@ class MySQL {
     }
 
     /**
+     * Sets the encoding charset (defaults to utf8)
+     */
+    public function set_charset($charset = 'utf8') {
+        return mysqli_set_charset($this->linkId, $charset);
+    }
+
+    /**
      * Selects the database
      * @param  string $database the database to connect to
      * @return boolean           true for success, false if not
@@ -439,6 +446,8 @@ class MySQL {
 
             if (is_null($value)) {
                 $values[] = "NULL";
+            } else if (strtolower($value) == 'now()') {
+                $values[] = "NOW()";
             } else {
                 $this->escape($value);
                 $values[] = "'$value'";
@@ -530,7 +539,7 @@ class MySQL {
      * @return returns True on success or False on failure.
      */
     private function free_result($single_query = true) {
-        mysqli_free_result($this->query_result);
+        if (is_resource($this->query_result)) mysqli_free_result($this->query_result);
 
         // if single query, free other result to avoid "command out of sync" error
         if ($single_query) {
@@ -550,7 +559,7 @@ class MySQL {
      * @return string           the first word in the query.
      */
     private function get_query_type($query = '') {
-        $query = explode(' ', $query);
+        $query = explode(' ', trim($query));
         return strtoupper($query[0]);
     }
 

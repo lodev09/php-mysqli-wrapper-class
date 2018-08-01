@@ -176,7 +176,7 @@ class MySQL {
             return date('Y-m-d'.($time ? ' H:i:s' : ''));
         else {
             $stamp = strtotime($date);
-            return date('Y-m-d'.($time ? ' H:i:s' : ''), $stamp );
+            return $stamp > 0 ? date('Y-m-d'.($time ? ' H:i:s' : ''), $stamp) : false;
         }
     }
 
@@ -489,8 +489,10 @@ class MySQL {
             $this->query_result = mysqli_query($this->linkId, $query);
 
             if (!$this->query_result) {
-                if ($this->debug) echo '[SQL-ERROR] '.$query;
-                trigger_error('[ERR] '.$this->get_error(), E_USER_ERROR);
+                $error = '[ERR] '.$this->get_error();
+                if ($this->debug) $error .= PHP_EOL.'[SQL] '.$query;
+
+                trigger_error($error, E_USER_ERROR);
             }
 
             switch ($this->query_type) {

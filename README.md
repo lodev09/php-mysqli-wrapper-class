@@ -2,8 +2,8 @@ PHP mysqli Wrapper Class
 ============================
 
 > If you're working on a new PHP project, I recommend for you to use PDO instead. I'm only maintaining this class because old projects are still using this.
->
-> I will publish my own PDO wrapper class that I use for new projects in the future :)
+
+You can find my own version of PDO wrapper [here](https://github.com/lodev09/php-models)
 
 A very simple yet useful helper class for PHP used in accessing your MySQL database using PHP's native _**mysqli**_. Requires php 5 or higher.
 

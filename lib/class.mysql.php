@@ -39,7 +39,7 @@ class MySQL {
     public $debug = false;
 
     // global clean - clean output for HTML display
-    public $clean = true;
+    public $clean = false;
 
     /**
      * Link ID of the current connection
@@ -789,7 +789,7 @@ class MySQL {
         if (is_null($value)) return $value;
         if (!is_string($value)) return $value;
 
-        $new_value = htmlentities(html_entity_decode($value, ENT_QUOTES));
+        $new_value = htmlentities(html_entity_decode($value, ENT_QUOTES), ENT_NOQUOTES);
         return utf8_encode($new_value);
     }
 }
